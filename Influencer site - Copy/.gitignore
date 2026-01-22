@@ -1,4 +1,4 @@
-# Git ignore file for Influencer Site d
+# Git ignore file for Influencer Site 
 .DS_Store
 node_modules
 .idea
