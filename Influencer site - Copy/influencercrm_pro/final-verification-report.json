@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-01-16T14:59:40.193Z",
+  "tests": [
+    {
+      "service": "creatorService",
+      "status": "passed",
+      "recordCount": 15431
+    },
+    {
+      "service": "brandService",
+      "status": "passed",
+      "recordCount": 1
+    },
+    {
+      "service": "brandService.create",
+      "status": "passed",
+      "brandId": "83d1d2f0-87e7-4dce-89ba-6ed1eac1982a"
+    },
+    {
+      "service": "contactService",
+      "status": "passed",
+      "recordCount": 1
+    },
+    {
+      "service": "campaignService",
+      "status": "passed",
+      "recordCount": 0
+    },
+    {
+      "service": "userManagementService",
+      "status": "failed",
+      "error": "Could not find a relationship between 'users' and 'userRoles' in the schema cache"
+    },
+    {
+      "service": "userRoles",
+      "status": "passed",
+      "recordCount": 5
+    },
+    {
+      "service": "systemSettings",
+      "status": "passed",
+      "recordCount": 0
+    },
+    {
+      "service": "auditLogs",
+      "status": "passed",
+      "recordCount": 0
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 1,
+    "warnings": 0
+  }
+}

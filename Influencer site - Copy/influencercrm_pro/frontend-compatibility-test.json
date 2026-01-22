@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-01-16T13:55:27.430Z",
+  "tables": {
+    "brands": {
+      "exists": true,
+      "recordCount": 0,
+      "error": null
+    },
+    "contacts": {
+      "exists": true,
+      "recordCount": 0,
+      "error": null
+    },
+    "campaigns": {
+      "exists": true,
+      "recordCount": 0,
+      "error": null
+    },
+    "users": {
+      "exists": true,
+      "recordCount": 0,
+      "error": null
+    },
+    "creators": {
+      "exists": true,
+      "recordCount": 15431,
+      "error": null
+    }
+  },
+  "relationships": {},
+  "rls": {}
+}

@@ -1,0 +1,344 @@
+/**
+ * Enterprise Spreadsheet Import Feature Styles
+ * Professional, responsive styling for all spreadsheet components
+ */
+
+/* Sidebar Import Buttons */
+.spreadsheet-import-btn {
+  @apply flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.spreadsheet-import-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.spreadsheet-import-btn:hover::before {
+  left: 100%;
+}
+
+.spreadsheet-import-btn:active {
+  transform: scale(0.98);
+}
+
+/* Sidebar Section Divider */
+.sidebar-section-divider {
+  @apply my-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent;
+  margin: 1rem 0;
+}
+
+/* Excel Import Button Specific Styling */
+.excel-import-button .btn {
+  @apply relative overflow-hidden group;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid #10b981;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.excel-import-button .btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.excel-import-button .btn:active {
+  transform: translateY(0);
+}
+
+/* Google Sheets Import Button Specific Styling */
+.google-sheets-import-button .btn {
+  @apply relative overflow-hidden group;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid #3b82f6;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.google-sheets-import-button .btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.google-sheets-import-button .btn:active {
+  transform: translateY(0);
+}
+
+/* URL Input Modal */
+.google-sheets-import-button .absolute {
+  @apply bg-white rounded-lg shadow-xl border border-gray-200;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.google-sheets-import-button input[type="url"] {
+  @apply border-gray-300 focus:border-blue-500 focus:ring-blue-500;
+  transition: all 0.2s ease;
+}
+
+.google-sheets-import-button input[type="url"]:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Spreadsheet Data Table */
+.spreadsheet-data-table {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.spreadsheet-data-table table {
+  @apply w-full border-collapse;
+}
+
+.spreadsheet-data-table th {
+  @apply px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  user-select: none;
+}
+
+.spreadsheet-data-table th:hover {
+  @apply bg-gray-100;
+  cursor: pointer;
+}
+
+.spreadsheet-data-table td {
+  @apply px-4 py-3 text-sm text-gray-900 border-b border-gray-100;
+  line-height: 1.5;
+}
+
+.spreadsheet-data-table tbody tr {
+  @apply transition-colors duration-150;
+}
+
+.spreadsheet-data-table tbody tr:hover {
+  @apply bg-blue-50;
+}
+
+.spreadsheet-data-table tbody tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+.spreadsheet-data-table tbody tr:nth-child(even):hover {
+  @apply bg-blue-50;
+}
+
+/* Table Controls */
+.spreadsheet-data-table .bg-gray-50 {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.spreadsheet-data-table input[type="text"] {
+  @apply border-gray-300 focus:border-blue-500 focus:ring-blue-500;
+  transition: all 0.2s ease;
+}
+
+.spreadsheet-data-table input[type="text"]:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.spreadsheet-data-table select {
+  @apply border-gray-300 focus:border-blue-500 focus:ring-blue-500;
+  transition: all 0.2s ease;
+}
+
+/* Column Toggle Menu */
+.spreadsheet-data-table .absolute.z-50 {
+  @apply bg-white rounded-lg shadow-lg border border-gray-200;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.spreadsheet-data-table .absolute.z-50 label {
+  @apply transition-colors duration-150;
+}
+
+.spreadsheet-data-table .absolute.z-50 label:hover {
+  @apply bg-gray-50;
+}
+
+.spreadsheet-data-table input[type="checkbox"] {
+  @apply border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0;
+}
+
+/* Spreadsheet Import Panel */
+.spreadsheet-import-panel .fixed {
+  backdrop-filter: blur(4px);
+}
+
+.spreadsheet-import-panel .absolute {
+  @apply bg-white rounded-lg shadow-2xl border border-gray-200;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.spreadsheet-import-panel .border-b-2 {
+  transition: all 0.2s ease;
+}
+
+.spreadsheet-import-panel .border-blue-500 {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.spreadsheet-import-panel .bg-blue-50 {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+/* Status Indicators */
+.excel-import-button .bg-green-50 {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #22c55e;
+}
+
+.excel-import-button .bg-red-50 {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #ef4444;
+}
+
+.google-sheets-import-button .bg-green-50 {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #22c55e;
+}
+
+.google-sheets-import-button .bg-red-50 {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #ef4444;
+}
+
+/* Loading States */
+.excel-import-button .animate-spin,
+.google-sheets-import-button .animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .spreadsheet-data-table {
+    @apply text-xs;
+  }
+  
+  .spreadsheet-data-table th,
+  .spreadsheet-data-table td {
+    @apply px-2 py-2;
+  }
+  
+  .spreadsheet-import-panel .absolute {
+    @apply inset-4;
+  }
+  
+  .google-sheets-import-button .absolute {
+    @apply left-0 right-0 mx-4;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .spreadsheet-import-btn {
+    @apply text-gray-300;
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  }
+  
+  .spreadsheet-import-btn:hover {
+    @apply text-blue-300;
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  }
+  
+  .spreadsheet-data-table {
+    @apply bg-gray-800 border-gray-700;
+  }
+  
+  .spreadsheet-data-table th {
+    @apply text-gray-300 border-gray-600;
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  }
+  
+  .spreadsheet-data-table td {
+    @apply text-gray-200 border-gray-700;
+  }
+  
+  .spreadsheet-data-table tbody tr:hover {
+    @apply bg-gray-700;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .spreadsheet-import-panel,
+  .excel-import-button,
+  .google-sheets-import-button {
+    display: none !important;
+  }
+  
+  .spreadsheet-data-table {
+    @apply shadow-none border border-gray-300;
+  }
+  
+  .spreadsheet-data-table th,
+  .spreadsheet-data-table td {
+    @apply border border-gray-300;
+  }
+}
+
+/* Accessibility */
+.spreadsheet-import-btn:focus,
+.excel-import-button .btn:focus,
+.google-sheets-import-button .btn:focus,
+.spreadsheet-data-table th:focus,
+.spreadsheet-data-table td:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .spreadsheet-import-btn {
+    @apply border-2 border-gray-600;
+  }
+  
+  .spreadsheet-data-table {
+    @apply border-2 border-gray-600;
+  }
+  
+  .spreadsheet-data-table th,
+  .spreadsheet-data-table td {
+    @apply border border-gray-600;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .spreadsheet-import-btn,
+  .excel-import-button .btn,
+  .google-sheets-import-button .btn,
+  .spreadsheet-data-table tbody tr,
+  .spreadsheet-import-panel .border-b-2 {
+    transition: none;
+  }
+  
+  .excel-import-button .animate-spin,
+  .google-sheets-import-button .animate-spin {
+    animation: none;
+  }
+}

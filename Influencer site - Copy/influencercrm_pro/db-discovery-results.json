@@ -1,0 +1,150 @@
+{
+  "creators": {
+    "exists": true,
+    "recordCount": 15431,
+    "columns": [
+      "id",
+      "sr_no",
+      "name",
+      "instagram_link",
+      "followers_tier",
+      "state",
+      "city",
+      "whatsapp",
+      "email",
+      "gender",
+      "username",
+      "sheet_source",
+      "created_at"
+    ],
+    "sampleData": [
+      {
+        "id": "e2874009-50a8-4056-87ae-092f0337a581",
+        "sr_no": 31,
+        "name": "Anji_santwani",
+        "instagram_link": "https://www.instagram.com/anji_santwani/reels/",
+        "followers_tier": "        0-10k",
+        "state": "Gujarat",
+        "city": "Ahmedabad",
+        "whatsapp": "9723583923",
+        "email": "anjalisantwani004@gmail.com",
+        "gender": "Female",
+        "username": "anji_santwani",
+        "sheet_source": "Beauty",
+        "created_at": "2026-01-05T13:17:27.299595+00:00"
+      }
+    ]
+  },
+  "brands": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "contacts": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "campaigns": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "brand_campaigns": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "campaign_deliverables": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "users": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "user_roles": {
+    "exists": true,
+    "recordCount": 5,
+    "columns": [
+      "id",
+      "role_name",
+      "display_name",
+      "permissions",
+      "description",
+      "created_at",
+      "updated_at"
+    ],
+    "sampleData": [
+      {
+        "id": "d5f5c860-80d6-4ed0-84c9-1616c259c135",
+        "role_name": "super_admin",
+        "display_name": "Super Admin",
+        "permissions": [
+          "all"
+        ],
+        "description": "Full system access with ability to manage all settings and users",
+        "created_at": "2025-12-24T14:22:09.302767+00:00",
+        "updated_at": "2026-01-09T13:38:13.628467+00:00"
+      }
+    ]
+  },
+  "audit_logs": {
+    "exists": true,
+    "recordCount": 0,
+    "columns": [],
+    "sampleData": []
+  },
+  "cities": {
+    "exists": true,
+    "recordCount": null,
+    "columns": [],
+    "sampleData": null
+  },
+  "states": {
+    "exists": true,
+    "recordCount": null,
+    "columns": [],
+    "sampleData": null
+  },
+  "system_settings": {
+    "exists": true,
+    "recordCount": 9,
+    "columns": [
+      "id",
+      "setting_key",
+      "setting_value",
+      "setting_category",
+      "description",
+      "is_public",
+      "created_at",
+      "updated_at"
+    ],
+    "sampleData": [
+      {
+        "id": "e1a79201-2fe3-4652-bb24-7a7b2bdd9fe6",
+        "setting_key": "app_name",
+        "setting_value": "CRM Dashboard",
+        "setting_category": "general",
+        "description": "Application name displayed in UI",
+        "is_public": true,
+        "created_at": "2025-12-24T14:22:09.302767+00:00",
+        "updated_at": "2025-12-24T14:22:09.302767+00:00"
+      }
+    ]
+  },
+  "export_logs": {
+    "exists": true,
+    "recordCount": null,
+    "columns": [],
+    "sampleData": null
+  }
+}
