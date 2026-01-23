@@ -19,8 +19,6 @@ import AdminStateManagement from './pages/admin-state-management';
 import AdminCityManagement from './pages/admin-city-management';
 
 const Routes = () => {
-  const location = useLocation();
-  
   const pageVariants = {
     initial: {
       opacity: 0,
@@ -58,17 +56,11 @@ const Routes = () => {
     </motion.div>
   );
 
-  // Diagnostic logging - moved inside useEffect to avoid hook call issues
-  React.useEffect(() => {
-    console.log('Current route:', window.location.pathname);
-    console.log('React Router location:', location.pathname);
-  }, [location.pathname]);
-
   return (
     <ErrorBoundary>
       <ScrollToTop />
       <AnimatePresence mode="wait">
-        <RouterRoutes location={location} key={location.pathname}>
+        <RouterRoutes>
           {/* Define your route here */}
           <Route path="/" element={<PageWrapper><LoginAndAuthentication /></PageWrapper>} />
           {/* Protect the executive dashboard so unauthenticated users are redirected to login */}

@@ -4,12 +4,22 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import EditCreatorModal from './EditCreatorModal';
 import EditableCell from './EditableCell';
+import { TableSkeleton } from '../../../components/ui/SkeletonLoader';
 
-const CreatorTable = ({ creators, selectedCreators, onSelectionChange, onSort, sortConfig, userRole, onCreatorUpdated }) => {
+const CreatorTable = ({ creators, selectedCreators, onSelectionChange, onSort, sortConfig, userRole, onCreatorUpdated, loading = false }) => {
   const navigate = useNavigate();
   const [editingCell, setEditingCell] = useState(null);
   const [editingCreator, setEditingCreator] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Show skeleton loader while loading
+  if (loading) {
+    return (
+      <div className="overflow-x-auto table-container">
+        <TableSkeleton rows={10} columns={13} className="min-w-[1400px]" />
+      </div>
+    );
+  }
 
   // Define column configuration for consistency
   const COLUMN_WIDTHS = {

@@ -5,6 +5,8 @@ import { Home, Users, FolderKanban, DollarSign, Database, Link as LinkIcon, Sett
 import { stateManagementService } from '../../services/stateManagementService';
 import { cityManagementService } from '../../services/cityManagementService';
 import SpreadsheetImportPanel from './SpreadsheetImportPanel';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
   const navigate = useNavigate();
@@ -13,6 +15,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
   const [unmappedStatesCount, setUnmappedStatesCount] = useState(0);
   const [unmappedCitiesCount, setUnmappedCitiesCount] = useState(0);
   const [showImportPanel, setShowImportPanel] = useState(false);
+
+  // Dynamic branding and auth
+  const { platformName, primaryThemeColor } = useSettings();
+  const { isSuperAdmin } = useAuth();
 
   // Keyboard navigation support
   const handleKeyDown = (e) => {
@@ -82,9 +88,12 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
     { name: 'Payment Processing', href: '/payment-processing-center', icon: DollarSign },
     { name: 'Brand & Contact', href: '/brand-contact-management', icon: Users },
     { name: 'Bulk Instagram Processor', href: '/bulk-instagram-processor', icon: LinkIcon },
-    { name: 'System Settings', href: '/system-settings-user-management', icon: Settings },
-    { name: 'State Management', href: '/admin-state-management', icon: MapPin },
-    { name: 'City Management', href: '/admin-city-management', icon: Building },
+    // Admin-only navigation items
+    ...(isSuperAdmin ? [
+      { name: 'System Settings', href: '/system-settings-user-management', icon: Settings },
+      { name: 'State Management', href: '/admin-state-management', icon: MapPin },
+      { name: 'City Management', href: '/admin-city-management', icon: Building },
+    ] : []),
   ];
 
   const handleNavigation = (path) => {
@@ -132,9 +141,9 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
         
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <img src="/assets/images/upgoal-logo.svg" alt="Upgoal Media" className="w-8 h-6 object-contain" />
+            <img src="/assets/images/upgoal-logo.svg" alt={platformName} className="w-8 h-6 object-contain" />
           </div>
-          <span className="sidebar-logo-text">Upgoal Media</span>
+          <span className="sidebar-logo-text">{platformName}</span>
         </div>
 
         <nav className="sidebar-nav" role="navigation" aria-label="Main navigation">

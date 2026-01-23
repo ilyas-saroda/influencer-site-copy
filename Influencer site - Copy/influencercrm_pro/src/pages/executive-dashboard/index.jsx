@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/ui/Sidebar';
 import Header from '../../components/ui/Header';
+import Breadcrumb from '../../components/ui/Breadcrumb';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MetricCard from './components/MetricCard';
@@ -10,6 +11,10 @@ import CampaignStatusCard from './components/CampaignStatusCard';
 import PaymentAlertItem from './components/PaymentAlertItem';
 import ChartSection from './components/ChartSection';
 import IntegrationStatusBadge from './components/IntegrationStatusBadge';
+import { DashboardStatsSkeleton, CardSkeleton, ChartSkeleton } from '../../components/ui/SkeletonLoader';
+import { useToast } from '../../components/ui/ToastContainer';
+import { useGlobalSearch } from '../../hooks/useGlobalSearch';
+import GlobalSearch from '../../components/ui/GlobalSearch';
 import { realtimeService } from '../../services/realtimeService';
 import { campaignService } from '../../services/campaignService';
 import { creatorService } from '../../services/creatorService';
@@ -19,6 +24,8 @@ import { supabase } from '../../lib/supabase';
 
 const ExecutiveDashboard = () => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
+  const { isOpen: isSearchOpen, openSearch, closeSearch } = useGlobalSearch();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [userRole] = useState('Super Admin');
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -38,7 +45,9 @@ const ExecutiveDashboard = () => {
         payments,
         topPerformers,
         monthlyCampaignData,
-        creatorAcquisitionData
+        creatorAcquisitionData,
+        creatorCategories,
+        campaignROIData
       ] = await Promise.all([
         // Total creators count
         supabase.from('creators').select('*', { count: 'exact', head: true }),
@@ -50,7 +59,7 @@ const ExecutiveDashboard = () => {
           .order('created_at', { ascending: false })
           .limit(5),
         
-        // Active campaigns
+        // Active campaigns with ROI data
         supabase
           .from('campaigns')
           .select('*')
@@ -72,14 +81,27 @@ const ExecutiveDashboard = () => {
         // Monthly campaign volume (last 12 months)
         supabase
           .from('campaigns')
-          .select('created_at')
+          .select('created_at, budget, actual_spend')
           .gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()),
         
         // Creator acquisition trends (last 12 months)
         supabase
           .from('creators')
           .select('created_at')
-          .gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
+          .gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()),
+
+        // Creator categories for distribution pie chart
+        supabase
+          .from('creators')
+          .select('category, niche'),
+
+        // Campaign ROI trends
+        supabase
+          .from('campaigns')
+          .select('name, budget, actual_spend, created_at, status')
+          .in('status', ['active', 'completed'])
+          .order('created_at', { ascending: false })
+          .limit(50)
       ]);
 
       // Process total creators
@@ -108,6 +130,12 @@ const ExecutiveDashboard = () => {
       
       // Process creator acquisition trends
       const creatorAcquisitionTrends = processMonthlyData(creatorAcquisitionData.data || [], 'creators');
+
+      // Process creator category distribution
+      const creatorCategoryDistribution = processCategoryDistribution(creatorCategories.data || []);
+
+      // Process ROI trends
+      const roiTrends = processROIData(campaignROIData.data || []);
 
       // Calculate trends (simplified version)
       const trends = calculateTrends({
@@ -179,6 +207,54 @@ const ExecutiveDashboard = () => {
     return months.map(month => ({
       name: month,
       value: monthlyData[month]
+    }));
+  };
+
+  // Helper function to process creator category distribution
+  const processCategoryDistribution = (data) => {
+    const categoryCount = {};
+    
+    data.forEach(creator => {
+      const category = creator.category || creator.niche || 'Other';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+    
+    return Object.entries(categoryCount).map(([name, value]) => ({
+      name,
+      value
+    }));
+  };
+
+  // Helper function to process ROI data with conditional formatting
+  const processROIData = (data) => {
+    const monthlyROI = {};
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Initialize all months with 0
+    months.forEach(month => {
+      monthlyROI[month] = { totalROI: 0, count: 0, lowPerformanceCount: 0 };
+    });
+    
+    // Calculate ROI by month and track low performance
+    data.forEach(campaign => {
+      if (campaign.budget && campaign.actual_spend) {
+        const roi = ((campaign.budget - campaign.actual_spend) / campaign.actual_spend) * 100;
+        const date = new Date(campaign.created_at);
+        const monthName = months[date.getMonth()];
+        monthlyROI[monthName].totalROI += roi;
+        monthlyROI[monthName].count++;
+        if (roi < 1) {
+          monthlyROI[monthName].lowPerformanceCount++;
+        }
+      }
+    });
+    
+    // Convert to array format for charts and calculate average
+    return months.map(month => ({
+      name: month,
+      value: Math.round(monthlyROI[month].totalROI / Math.max(1, monthlyROI[month].count)),
+      lowPerformance: monthlyROI[month].lowPerformanceCount,
+      totalCampaigns: monthlyROI[month].count
     }));
   };
 
@@ -282,6 +358,32 @@ const ExecutiveDashboard = () => {
     { name: 'Nov', value: 195 },
     { name: 'Dec', value: 147 }
   ];
+
+  // New analytics data
+  const [creatorCategoryData, setCreatorCategoryData] = useState([
+    { name: 'Fashion', value: 145 },
+    { name: 'Technology', value: 98 },
+    { name: 'Food', value: 76 },
+    { name: 'Beauty', value: 112 },
+    { name: 'Gaming', value: 54 },
+    { name: 'Travel', value: 38 },
+    { name: 'Other', value: 27 }
+  ]);
+
+  const [roiTrendsData, setRoiTrendsData] = useState([
+    { name: 'Jan', value: 12.5 },
+    { name: 'Feb', value: 15.2 },
+    { name: 'Mar', value: 18.7 },
+    { name: 'Apr', value: 14.3 },
+    { name: 'May', value: 22.1 },
+    { name: 'Jun', value: 25.8 },
+    { name: 'Jul', value: 28.4 },
+    { name: 'Aug', value: 24.6 },
+    { name: 'Sep', value: 30.2 },
+    { name: 'Oct', value: 27.9 },
+    { name: 'Nov', value: 32.5 },
+    { name: 'Dec', value: 29.1 }
+  ]);
 
   const integrationStatus = [
     {
@@ -412,7 +514,7 @@ const ExecutiveDashboard = () => {
   const handleExportReport = () => {
     try {
       if (!dashboardData) {
-        alert('No dashboard data available to export');
+        addToast('No dashboard data available to export', 'warning');
         return;
       }
 
@@ -446,10 +548,42 @@ const ExecutiveDashboard = () => {
       // Export to Excel (includes all sheets)
       exportUtils?.exportToExcel(summaryData, filename);
 
-      alert('Dashboard report exported successfully!');
+      addToast('Dashboard report exported successfully!', 'success');
     } catch (error) {
       console.error('Export failed:', error);
-      alert(`Failed to export dashboard report: ${error?.message}`);
+      addToast(`Failed to export dashboard report: ${error?.message}`, 'error');
+    }
+  };
+
+  // Quick Actions handlers
+  const handleAddNewCampaign = () => {
+    navigate('/campaign-management-center?action=new');
+  };
+
+  const handleExportMonthlyReport = () => {
+    handleExportReport();
+  };
+
+  const handleViewAuditLogs = () => {
+    navigate('/system-settings-user-management?tab=audit');
+  };
+
+  const handleImportCreators = () => {
+    navigate('/creator-database-management?action=import');
+  };
+
+  const handleViewLowPerformance = () => {
+    const lowPerfCampaigns = dashboardData?.campaigns?.filter(c => {
+      if (c.budget && c.actual_spend) {
+        const roi = ((c.budget - c.actual_spend) / c.actual_spend) * 100;
+        return roi < 1;
+      }
+      return false;
+    }) || [];
+    
+    if (lowPerfCampaigns.length > 0) {
+      addToast(`Found ${lowPerfCampaigns.length} low performance campaigns`, 'warning');
+      console.log(lowPerfCampaigns);
     }
   };
 
@@ -492,6 +626,9 @@ const ExecutiveDashboard = () => {
       <Header isCollapsed={isSidebarCollapsed} />
       <main className={`main-content ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="p-6 max-w-[1600px] mx-auto">
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb className="mb-4" />
+          
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-foreground mb-1">Executive Dashboard</h1>
@@ -527,15 +664,96 @@ const ExecutiveDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+            {/* Quick Actions Sidebar */}
             <div className="lg:col-span-3 bg-card border border-border rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
-                <Icon name="Activity" size={20} color="var(--color-primary)" />
+                <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+                <Icon name="Zap" size={20} color="var(--color-primary)" />
               </div>
-              <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
-                {recentActivities?.map((activity, index) => (
-                  <ActivityFeedItem key={index} activity={activity} />
-                ))}
+              <div className="space-y-3">
+                <Button
+                  variant="default"
+                  size="sm"
+                  iconName="Plus"
+                  iconPosition="left"
+                  onClick={handleAddNewCampaign}
+                  className="w-full justify-start"
+                >
+                  Add New Campaign
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName="Download"
+                  iconPosition="left"
+                  onClick={handleExportMonthlyReport}
+                  className="w-full justify-start"
+                >
+                  Export Monthly Report
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName="AlertTriangle"
+                  iconPosition="left"
+                  onClick={handleViewAuditLogs}
+                  className="w-full justify-start"
+                >
+                  View Audit Logs
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName="Upload"
+                  iconPosition="left"
+                  onClick={handleImportCreators}
+                  className="w-full justify-start"
+                >
+                  Import Creators
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName="TrendingDown"
+                  iconPosition="left"
+                  onClick={handleViewLowPerformance}
+                  className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Low Performance ({dashboardData?.campaigns?.filter(c => {
+                    if (c.budget && c.actual_spend) {
+                      const roi = ((c.budget - c.actual_spend) / c.actual_spend) * 100;
+                      return roi < 1;
+                    }
+                    return false;
+                  })?.length || 0})
+                </Button>
+              </div>
+              
+              {/* Performance Summary */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <h3 className="text-sm font-medium text-foreground mb-3">Performance Summary</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Active Campaigns</span>
+                    <span className="font-medium">{dashboardData?.metrics?.activeCampaigns || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Low ROI (&lt;1%)</span>
+                    <span className="font-medium text-red-600">
+                      {dashboardData?.campaigns?.filter(c => {
+                        if (c.budget && c.actual_spend) {
+                          const roi = ((c.budget - c.actual_spend) / c.actual_spend) * 100;
+                          return roi < 1;
+                        }
+                        return false;
+                      })?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Pending Payments</span>
+                    <span className="font-medium">{dashboardData?.metrics?.pendingPayments || 0}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -553,49 +771,74 @@ const ExecutiveDashboard = () => {
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(dashboardData?.campaigns || []).filter(c => c?.status === 'active').map((campaign, index) => (
-                  <CampaignStatusCard key={campaign?.id ?? index} campaign={campaign} />
-                ))}
+                {(dashboardData?.campaigns || []).filter(c => c?.status === 'active').map((campaign, index) => {
+                  const roi = campaign.budget && campaign.actual_spend 
+                    ? ((campaign.budget - campaign.actual_spend) / campaign.actual_spend) * 100 
+                    : 0;
+                  const isLowPerformance = roi < 1;
+                  
+                  return (
+                    <CampaignStatusCard 
+                      key={campaign?.id ?? index} 
+                      campaign={campaign}
+                      isLowPerformance={isLowPerformance}
+                    />
+                  );
+                })}
               </div>
             </div>
 
             <div className="lg:col-span-4 bg-card border border-border rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Payment Alerts</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="ArrowRight"
-                  iconPosition="right"
-                  onClick={() => navigate('/payment-processing-center')}
-                >
-                  View All
-                </Button>
+                <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+                <Icon name="Activity" size={20} color="var(--color-primary)" />
               </div>
-              <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar">
-                {paymentAlerts?.map((payment, index) => (
-                  <PaymentAlertItem key={index} payment={payment} />
+              <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
+                {recentActivities?.map((activity, index) => (
+                  <ActivityFeedItem key={index} activity={activity} />
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <ChartSection
+              type="area"
+              title="Campaign ROI Trends (%)"
+              data={roiTrendsData}
+              loading={isRefreshing}
+            />
+            <ChartSection
+              type="pie"
+              title="Creator Category Distribution"
+              data={creatorCategoryData}
+              loading={isRefreshing}
+              colors={['var(--color-primary)', 'var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)', 'var(--color-chart-6)']}
+            />
             <ChartSection
               type="bar"
               title="Monthly Campaign Volume"
               data={campaignVolumeData}
               loading={isRefreshing}
             />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <ChartSection
               type="line"
               title="Creator Acquisition Trends"
               data={creatorAcquisitionData}
               loading={isRefreshing}
             />
+            <ChartSection
+              type="area"
+              title="Monthly Growth Overview"
+              data={creatorAcquisitionData}
+              loading={isRefreshing}
+            />
           </div>
 
-          <div className="bg-card border border-border rounded-lg p-6">
+          <div className="bg-card border border-border rounded-lg p-6 mb-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Integration Status</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {integrationStatus?.map((integration, index) => (
@@ -619,6 +862,13 @@ const ExecutiveDashboard = () => {
           </div>
         </div>
       </main>
+      
+      {/* Global Search Modal */}
+      <GlobalSearch 
+        isOpen={isSearchOpen}
+        onClose={closeSearch}
+        onNavigate={(route) => navigate(route)}
+      />
     </div>
   );
 };

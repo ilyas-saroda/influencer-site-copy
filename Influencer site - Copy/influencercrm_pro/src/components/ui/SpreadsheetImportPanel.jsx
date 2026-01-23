@@ -4,10 +4,8 @@
  * Provides unified interface for all spreadsheet import operations
  */
 
-import React, { useState } from 'react';
-import { X, FileSpreadsheet, Database } from 'lucide-react';
-import ExcelImportButton from './ExcelImportButton';
-import GoogleSheetsImportButton from './GoogleSheetsImportButton';
+import React, { useState, useCallback } from 'react';
+import { X, FileSpreadsheet, Database, AlertCircle } from 'lucide-react';
 import SpreadsheetDataTable from './SpreadsheetDataTable';
 import Button from './Button';
 
@@ -20,34 +18,46 @@ const SpreadsheetImportPanel = ({
 }) => {
   const [importedData, setImportedData] = useState(null);
   const [activeTab, setActiveTab] = useState('excel'); // excel, google, preview
+  const [importError, setImportError] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   /**
    * Handle successful data import
    */
-  const handleDataImported = (result) => {
+  const handleDataImported = useCallback((result) => {
+    if (!result || !result.data) {
+      setImportError('Invalid data format received');
+      return;
+    }
+    
     setImportedData(result);
     setActiveTab('preview');
+    setImportError(null);
+    setIsImporting(false);
     
     if (onDataImported) {
       onDataImported(result);
     }
-  };
+  }, [onDataImported]);
 
   /**
    * Handle import errors
    */
-  const handleImportError = (error) => {
+  const handleImportError = useCallback((error) => {
     console.error('Import error:', error);
-    // Error handling is managed by individual components
-  };
+    setImportError(error?.message || 'Failed to import data');
+    setIsImporting(false);
+  }, []);
 
   /**
    * Reset import state
    */
-  const resetImport = () => {
+  const resetImport = useCallback(() => {
     setImportedData(null);
     setActiveTab('excel');
-  };
+    setImportError(null);
+    setIsImporting(false);
+  }, []);
 
   /**
    * Close panel and reset state
@@ -60,6 +70,38 @@ const SpreadsheetImportPanel = ({
   };
 
   if (!isOpen) return null;
+
+  // Fallback component for missing ExcelImportButton
+  const ExcelImportFallback = () => (
+    <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
+      <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+      <h3 className="text-lg font-medium text-gray-900 mb-2">Excel Import Coming Soon</h3>
+      <p className="text-gray-600 mb-4">Excel import functionality is currently under development.</p>
+      <Button 
+        onClick={() => setImportError('Excel import not yet implemented')}
+        variant="outline"
+        disabled
+      >
+        Import Excel File
+      </Button>
+    </div>
+  );
+
+  // Fallback component for missing GoogleSheetsImportButton
+  const GoogleSheetsImportFallback = () => (
+    <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
+      <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+      <h3 className="text-lg font-medium text-gray-900 mb-2">Google Sheets Import Coming Soon</h3>
+      <p className="text-gray-600 mb-4">Google Sheets import functionality is currently under development.</p>
+      <Button 
+        onClick={() => setImportError('Google Sheets import not yet implemented')}
+        variant="outline"
+        disabled
+      >
+        Connect to Google Sheets
+      </Button>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -117,7 +159,7 @@ const SpreadsheetImportPanel = ({
             Google Sheets Import
           </button>
           
-          {importedData && (
+          {importedData?.data && (
             <button
               onClick={() => setActiveTab('preview')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -127,17 +169,35 @@ const SpreadsheetImportPanel = ({
               }`}
             >
               Data Preview
-              {importedData.data && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
-                  {importedData.data.length} rows
-                </span>
-              )}
+              <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                {importedData.data.length} rows
+              </span>
             </button>
           )}
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">
+          {/* Error Display */}
+          {importError && (
+            <div className="m-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-red-900">Import Error</h4>
+                  <p className="text-sm text-red-700 mt-1">{importError}</p>
+                </div>
+                <Button
+                  onClick={() => setImportError(null)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
           {/* Excel/CSV Import Tab */}
           {activeTab === 'excel' && (
             <div className="p-6 h-full overflow-y-auto">
@@ -167,11 +227,7 @@ const SpreadsheetImportPanel = ({
                 </div>
 
                 <div className="flex justify-center">
-                  <ExcelImportButton
-                    onDataImported={handleDataImported}
-                    onError={handleImportError}
-                    className="w-full max-w-md"
-                  />
+                  <ExcelImportFallback />
                 </div>
 
                 <div className="text-xs text-gray-500 text-center">
@@ -209,11 +265,7 @@ const SpreadsheetImportPanel = ({
                 </div>
 
                 <div className="flex justify-center">
-                  <GoogleSheetsImportButton
-                    onDataImported={handleDataImported}
-                    onError={handleImportError}
-                    className="w-full max-w-md"
-                  />
+                  <GoogleSheetsImportFallback />
                 </div>
 
                 <div className="text-xs text-gray-500 text-center">
@@ -224,13 +276,13 @@ const SpreadsheetImportPanel = ({
           )}
 
           {/* Data Preview Tab */}
-          {activeTab === 'preview' && importedData && (
+          {activeTab === 'preview' && importedData?.data && (
             <div className="h-full flex flex-col">
               <div className="flex-1 overflow-hidden">
                 <SpreadsheetDataTable
-                  data={importedData.data}
-                  headers={importedData.headers}
-                  metadata={importedData.metadata}
+                  data={importedData.data || []}
+                  headers={importedData.headers || []}
+                  metadata={importedData.metadata || {}}
                   className="h-full"
                   maxHeight="none"
                 />
@@ -239,7 +291,7 @@ const SpreadsheetImportPanel = ({
               <div className="border-t border-gray-200 p-4 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">
-                    {importedData.metadata && (
+                    {importedData?.metadata && (
                       <span>
                         Source: {importedData.metadata.fileType || importedData.metadata.source || 'Unknown'} | 
                         Last imported: {new Date().toLocaleString()}

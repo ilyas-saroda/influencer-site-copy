@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, User, Globe, AlertCircle, CheckCircle, XCircle, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Clock, User, Globe, AlertCircle, CheckCircle, XCircle, FileText, ChevronDown, ChevronUp, Filter, Search, AlertTriangle, Shield, Users, Settings, Database } from 'lucide-react';
 import { useAudit } from '../../hooks/useAudit';
 
 /**
@@ -18,9 +18,28 @@ export function AuditLogEntry({ log, showDetails = false, onViewDetails = null }
         return <User className="h-4 w-4 text-blue-500" />;
       case 'SYSTEM_EVENT':
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'MASS_DELETE':
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      case 'BULK_UPDATE':
+        return <Settings className="h-4 w-4 text-orange-500" />;
+      case 'PERMISSIONS_CHANGE':
+        return <Shield className="h-4 w-4 text-purple-500" />;
+      case 'DATA_EXPORT':
+        return <Database className="h-4 w-4 text-indigo-500" />;
       default:
         return <FileText className="h-4 w-4 text-gray-500" />;
     }
+  };
+
+  const isHighRiskAction = (actionType) => {
+    const highRiskActions = ['MASS_DELETE', 'BULK_UPDATE', 'PERMISSIONS_CHANGE', 'DATA_EXPORT', 'DELETE_ALL'];
+    return highRiskActions.includes(actionType);
+  };
+
+  const getRiskLevel = (actionType) => {
+    if (isHighRiskAction(actionType)) return 'high';
+    if (actionType.includes('DELETE') || actionType.includes('UPDATE')) return 'medium';
+    return 'low';
   };
 
   const formatDate = (timestamp) => {
@@ -49,15 +68,26 @@ export function AuditLogEntry({ log, showDetails = false, onViewDetails = null }
   };
 
   return (
-    <div className="border-b border-gray-200 p-4 hover:bg-gray-50">
+    <div className={`border-b p-4 hover:bg-gray-50 ${isHighRiskAction(log.action_type) ? 'border-l-4 border-l-red-500 bg-red-50' : 'border-gray-200'}`}>
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3 flex-1">
-          {getStatusIcon(log.action_type)}
+          <div className="relative">
+            {getStatusIcon(log.action_type)}
+            {isHighRiskAction(log.action_type) && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-gray-900">
+              <span className={`text-sm font-medium ${isHighRiskAction(log.action_type) ? 'text-red-800' : 'text-gray-900'}`}>
                 {log.action_type.replace(/_/g, ' ')}
               </span>
+              {isHighRiskAction(log.action_type) && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  High Risk
+                </span>
+              )}
               {log.table_name && (
                 <span className="text-xs text-gray-500">
                   on {log.table_name}
@@ -90,6 +120,15 @@ export function AuditLogEntry({ log, showDetails = false, onViewDetails = null }
                   <span>{log.ip_address}</span>
                 </div>
               )}
+              <div className="flex items-center space-x-1">
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  getRiskLevel(log.action_type) === 'high' ? 'bg-red-100 text-red-800' :
+                  getRiskLevel(log.action_type) === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {getRiskLevel(log.action_type)} risk
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -394,6 +433,247 @@ export function ChangeHistoryModal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Enhanced System Activity Monitor with filtering and pagination
+ */
+export function SystemActivityMonitor({ 
+  logs = [], 
+  loading = false, 
+  error = null,
+  title = "System Activity Monitor"
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedActionType, setSelectedActionType] = useState('all');
+  const [selectedRiskLevel, setSelectedRiskLevel] = useState('all');
+  const [selectedUserRole, setSelectedUserRole] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [logsPerPage] = useState(20);
+
+  // Get unique action types, user roles, and risk levels for filters
+  const { uniqueActionTypes, uniqueUserRoles, filteredLogs } = useMemo(() => {
+    const actionTypes = [...new Set(logs.map(log => log.action_type))].sort();
+    const userRoles = [...new Set(logs.map(log => log.user_role || 'Unknown'))].sort();
+    
+    let filtered = logs;
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(log => 
+        log.action_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.table_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply action type filter
+    if (selectedActionType !== 'all') {
+      filtered = filtered.filter(log => log.action_type === selectedActionType);
+    }
+    
+    // Apply risk level filter
+    if (selectedRiskLevel !== 'all') {
+      filtered = filtered.filter(log => {
+        if (selectedRiskLevel === 'high') {
+          return ['MASS_DELETE', 'BULK_UPDATE', 'PERMISSIONS_CHANGE', 'DATA_EXPORT', 'DELETE_ALL'].includes(log.action_type);
+        } else if (selectedRiskLevel === 'medium') {
+          return log.action_type.includes('DELETE') || log.action_type.includes('UPDATE');
+        } else {
+          return !['MASS_DELETE', 'BULK_UPDATE', 'PERMISSIONS_CHANGE', 'DATA_EXPORT', 'DELETE_ALL'].includes(log.action_type) &&
+                 !log.action_type.includes('DELETE') && !log.action_type.includes('UPDATE');
+        }
+      });
+    }
+    
+    // Apply user role filter
+    if (selectedUserRole !== 'all') {
+      filtered = filtered.filter(log => (log.user_role || 'Unknown') === selectedUserRole);
+    }
+    
+    return {
+      uniqueActionTypes: actionTypes,
+      uniqueUserRoles: userRoles,
+      filteredLogs: filtered
+    };
+  }, [logs, searchTerm, selectedActionType, selectedRiskLevel, selectedUserRole]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+  const startIndex = (currentPage - 1) * logsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + logsPerPage);
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedActionType('all');
+    setSelectedRiskLevel('all');
+    setSelectedUserRole('all');
+    setCurrentPage(1);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Loading system activity...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-400" />
+          <span className="ml-2 text-red-800">Error loading system activity: {error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white shadow rounded-lg">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Showing {paginatedLogs.length} of {filteredLogs.length} activities 
+              {filteredLogs.length !== logs.length && ` (filtered from ${logs.length} total)`}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              {filteredLogs.filter(log => ['MASS_DELETE', 'BULK_UPDATE', 'PERMISSIONS_CHANGE', 'DATA_EXPORT', 'DELETE_ALL'].includes(log.action_type)).length} High Risk
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search activities..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Action Type Filter */}
+          <select
+            value={selectedActionType}
+            onChange={(e) => {
+              setSelectedActionType(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Actions</option>
+            {uniqueActionTypes.map(type => (
+              <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+            ))}
+          </select>
+
+          {/* Risk Level Filter */}
+          <select
+            value={selectedRiskLevel}
+            onChange={(e) => {
+              setSelectedRiskLevel(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Risk Levels</option>
+            <option value="high">High Risk</option>
+            <option value="medium">Medium Risk</option>
+            <option value="low">Low Risk</option>
+          </select>
+
+          {/* User Role Filter */}
+          <select
+            value={selectedUserRole}
+            onChange={(e) => {
+              setSelectedUserRole(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All User Roles</option>
+            {uniqueUserRoles.map(role => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+
+          {/* Reset Filters */}
+          <button
+            onClick={resetFilters}
+            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 transition-colors"
+          >
+            Reset Filters
+          </button>
+        </div>
+      </div>
+
+      {/* Logs List */}
+      <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+        {paginatedLogs.length === 0 ? (
+          <div className="text-center py-8">
+            <FileText className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No activities found</h3>
+            <p className="mt-1 text-sm text-gray-500">Try adjusting your filters or search terms.</p>
+          </div>
+        ) : (
+          paginatedLogs.map((log) => (
+            <AuditLogEntry
+              key={log.id}
+              log={log}
+              showDetails={true}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <span className="px-3 py-1 text-sm">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

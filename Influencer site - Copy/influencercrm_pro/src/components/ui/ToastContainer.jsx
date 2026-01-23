@@ -49,7 +49,12 @@ export const ToastProvider = ({ children }) => {
     toast,
     removeToast,
     clearAllToasts,
-    toasts
+    toasts,
+    // Convenience methods
+    success: (message, options = {}) => toast(message, { ...options, type: 'success' }),
+    error: (message, options = {}) => toast(message, { ...options, type: 'error' }),
+    warning: (message, options = {}) => toast(message, { ...options, type: 'warning' }),
+    info: (message, options = {}) => toast(message, { ...options, type: 'info' })
   };
 
   return (

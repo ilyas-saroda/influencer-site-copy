@@ -2,21 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Users, Activity, Shield } from 'lucide-react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
+import AdminControlCenter from './components/AdminControlCenter';
 import SystemSettingsPanel from './components/SystemSettingsPanel';
 import UserManagementPanel from './components/UserManagementPanel';
 import AuditLogsPanel from './components/AuditLogsPanel';
+import PermissionGuard from '../../components/admin/PermissionGuard';
 import Icon from '../../components/AppIcon';
 
 
 
 const SystemSettingsUserManagement = () => {
-  const [activeTab, setActiveTab] = useState('settings');
+  const [activeTab, setActiveTab] = useState('admin');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const tabs = [
-    { id: 'settings', label: 'System Settings', icon: Settings },
-    { id: 'users', label: 'User Management', icon: Users },
-    { id: 'audit', label: 'Audit Logs', icon: Activity }
+    { id: 'admin', label: 'Admin Control Center', icon: Shield },
+    { id: 'settings', label: 'Legacy Settings', icon: Settings },
+    { id: 'users', label: 'Legacy Users', icon: Users },
+    { id: 'audit', label: 'Legacy Audit', icon: Activity }
   ];
 
   return (
@@ -68,11 +71,15 @@ const SystemSettingsUserManagement = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-card border border-border rounded-lg shadow-sm">
-            {activeTab === 'settings' && <SystemSettingsPanel />}
-            {activeTab === 'users' && <UserManagementPanel />}
-            {activeTab === 'audit' && <AuditLogsPanel />}
-          </div>
+          {activeTab === 'admin' ? (
+            <AdminControlCenter />
+          ) : (
+            <div className="bg-card border border-border rounded-lg shadow-sm">
+              {activeTab === 'settings' && <SystemSettingsPanel />}
+              {activeTab === 'users' && <UserManagementPanel />}
+              {activeTab === 'audit' && <AuditLogsPanel />}
+            </div>
+          )}
         </div>
       </main>
     </div>

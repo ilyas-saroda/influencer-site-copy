@@ -247,9 +247,9 @@ export const createUser = async (userData) => {
         .insert({
           id: data.user.id,
           email: userData.email,
-          fullName: userData.fullName,
-          roleId: userData.roleId,
-          isActive: userData.isActive,
+          full_name: userData.fullName,
+          role_id: userData.roleId,
+          is_active: userData.isActive,
           created_at: new Date().toISOString(),
         });
 

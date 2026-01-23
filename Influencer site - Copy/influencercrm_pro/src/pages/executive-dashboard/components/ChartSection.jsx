@@ -1,8 +1,8 @@
 import React from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import Icon from '../../../components/AppIcon';
 
-const ChartSection = ({ type, title, data, loading = false }) => {
+const ChartSection = ({ type, title, data, loading = false, colors = null }) => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload?.length) {
       return (
@@ -23,6 +23,37 @@ const ChartSection = ({ type, title, data, loading = false }) => {
     }
     return null;
   };
+
+  const PieTooltip = ({ active, payload }) => {
+    if (active && payload && payload?.length) {
+      return (
+        <div className="bg-popover border border-border rounded-md shadow-lg p-3">
+          {payload?.map((entry, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: entry?.payload?.fill }}
+              />
+              <span className="text-xs text-muted-foreground">{entry?.name}:</span>
+              <span className="text-xs font-semibold text-foreground">{entry?.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const defaultColors = [
+    'var(--color-primary)', 
+    'var(--color-chart-1)', 
+    'var(--color-chart-2)', 
+    'var(--color-chart-3)', 
+    'var(--color-chart-4)', 
+    'var(--color-chart-5)'
+  ];
+
+  const chartColors = colors || defaultColors;
 
   if (loading) {
     return (
@@ -63,6 +94,54 @@ const ChartSection = ({ type, title, data, loading = false }) => {
               />
               <Bar dataKey="value" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
             </BarChart>
+          ) : type === 'pie' ? (
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+                ))}
+              </Pie>
+              <Tooltip content={<PieTooltip />} />
+              <Legend 
+                wrapperStyle={{ fontSize: '12px' }}
+                iconType="circle"
+              />
+            </PieChart>
+          ) : type === 'area' ? (
+            <AreaChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <XAxis 
+                dataKey="name" 
+                stroke="var(--color-muted-foreground)"
+                style={{ fontSize: '12px' }}
+              />
+              <YAxis 
+                stroke="var(--color-muted-foreground)"
+                style={{ fontSize: '12px' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                wrapperStyle={{ fontSize: '12px' }}
+                iconType="circle"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke="var(--color-primary)" 
+                fill="var(--color-primary)"
+                fillOpacity={0.3}
+                strokeWidth={2}
+              />
+            </AreaChart>
           ) : (
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />

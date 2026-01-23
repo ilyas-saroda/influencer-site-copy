@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/ui/ToastContainer';
 
 const LoginAndAuthentication = () => {
   const navigate = useNavigate();
+  const { signIn, isAuthenticated, loading: authLoading } = useAuth();
+  const { addToast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,37 +16,12 @@ const LoginAndAuthentication = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // If user already has a session, redirect to dashboard
+  // If user already authenticated, redirect to dashboard
   useEffect(() => {
-    let mounted = true;
-
-    const checkSession = async () => {
-      try {
-        const {
-          data: { session }
-        } = await supabase.auth.getSession();
-
-        if (mounted && session?.user) {
-          navigate('/executive-dashboard');
-        }
-      } catch (err) {
-        console.error('Error checking session', err);
-      }
-    };
-
-    checkSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        navigate('/executive-dashboard');
-      }
-    });
-
-    return () => {
-      mounted = false;
-      listener?.subscription?.unsubscribe?.();
-    };
-  }, [navigate]);
+    if (isAuthenticated) {
+      navigate('/executive-dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,29 +29,47 @@ const LoginAndAuthentication = () => {
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
+      console.log('🔐 Attempting login for:', email);
+      
+      const { data, error: authError } = await signIn(email.trim(), password);
 
       if (authError) {
-        setError(authError.message || 'Failed to sign in');
+        console.error('❌ Login failed:', authError);
+        
+        // Enhanced error handling with specific messages
+        let errorMessage = authError.message || 'Failed to sign in';
+        
+        if (authError.message?.includes('permission denied') || authError.code === '42501') {
+          errorMessage = 'Database permission error. Please contact your administrator to run the database setup script.';
+          addToast('Database permission error detected', 'error');
+        } else if (authError.message?.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (authError.message?.includes('Email not confirmed')) {
+          errorMessage = 'Please confirm your email address before signing in.';
+        }
+        
+        setError(errorMessage);
         setLoading(false);
         return;
       }
 
-      if (remember) {
-        // persistSession is true in client config; optionally keep flag
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('rememberMe');
-      }
+      if (data?.user) {
+        console.log('✅ Login successful for:', data.user.email);
+        addToast(`Welcome back, ${data.user.email}!`, 'success');
+        
+        if (remember) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+        }
 
-      // On success, redirect
-      navigate('/executive-dashboard');
+        // AuthContext will handle the redirect automatically
+      }
     } catch (err) {
-      console.error('Sign in error', err);
-      setError(err?.message || 'An unexpected error occurred');
+      console.error('❌ Login exception:', err);
+      const errorMessage = err?.message || 'An unexpected error occurred during login';
+      setError(errorMessage);
+      addToast('Login failed: ' + errorMessage, 'error');
     } finally {
       setLoading(false);
     }
