@@ -402,38 +402,49 @@ const CampaignManagementCenter = () => {
       setError(null);
       const data = await campaignService?.getAll();
       
-      // Transform data to match expected format
-      const transformedData = data?.map(campaign => ({
-        id: campaign?.id,
-        name: campaign?.name || campaign?.campaign_name,
-        brandName: campaign?.brand || campaign?.brand_name,
-        status: campaign?.payment_status === 'paid' ? 'completed' : campaign?.payment_status === 'pending' ? 'active' : 'planning',
-        creatorCount: 1, // Single creator per campaign in current schema
-        deliverableCount: 0, // Calculated from deliverables
-        completedDeliverables: 0,
-        totalBudget: campaign?.amount || campaign?.agreed_amount || 0,
-        budgetUsed: campaign?.payment_status === 'paid' ? (campaign?.amount || campaign?.agreed_amount || 0) : 0,
-        startDate: campaign?.start_date,
-        endDate: campaign?.end_date,
-        description: campaign?.campaign_name || campaign?.name,
-        assignedCreators: campaign?.creators ? [{
-          id: campaign?.creators?.id,
-          name: campaign?.creators?.name,
-          instagram: campaign?.creators?.username,
-          avatar: campaign?.creators?.instagram_link,
-          deliverables: 0,
-          amount: campaign?.amount || campaign?.agreed_amount || 0,
-          status: campaign?.payment_status,
-          paymentStatus: campaign?.payment_status === 'paid' ? 'Paid' : 'Pending'
-        }] : [],
-        deliverables: [],
-        payments: []
-      }));
+      // Transform data to match expected format with fallback for missing relationships
+      const transformedData = data?.map(campaign => {
+        // Check if campaign_creators relationship exists
+        const hasCreators = campaign?.campaign_creators && Array.isArray(campaign.campaign_creators);
+        
+        return {
+          id: campaign?.id,
+          name: campaign?.name || campaign?.campaign_name,
+          brandName: campaign?.brand || campaign?.brand_name,
+          status: campaign?.status || 'planning',
+          creatorCount: hasCreators ? campaign?.campaign_creators?.length || 0 : 0,
+          deliverableCount: hasCreators ? campaign?.campaign_creators?.reduce((sum, cc) => sum + (cc?.deliverables?.length || 0), 0) : 0,
+          completedDeliverables: hasCreators ? campaign?.campaign_creators?.reduce((sum, cc) => sum + (cc?.completed_deliverables?.length || 0), 0) : 0,
+          totalBudget: campaign?.budget || 0,
+          budgetUsed: campaign?.actual_spend || 0,
+          startDate: campaign?.start_date,
+          endDate: campaign?.end_date,
+          description: campaign?.description || campaign?.campaign_name,
+          assignedCreators: hasCreators ? campaign?.campaign_creators?.map(cc => ({
+            id: cc?.creators?.id,
+            name: cc?.creators?.name || 'Unknown Creator',
+            instagram: cc?.creators?.instagram_handle || '@unknown',
+            avatar: cc?.creators?.profile_image_url,
+            deliverables: cc?.deliverables?.length || 0,
+            amount: cc?.total_value || cc?.fixed_amount || 0,
+            status: cc?.status || 'assigned',
+            paymentStatus: cc?.payment_status === 'paid' ? 'Paid' : 'Pending',
+            engagementRate: cc?.creators?.engagement_rate || 0,
+            followersCount: cc?.creators?.followers_count || 0,
+            performanceScore: cc?.creators?.performance_score || 0
+          })) : [],
+          deliverables: hasCreators ? campaign?.campaign_creators?.flatMap(cc => cc?.deliverables || []) : [],
+          payments: []
+        };
+      });
 
       setCampaigns(transformedData);
     } catch (err) {
       console.error('Error loading campaigns:', err);
       setError(err?.message || 'Failed to load campaigns');
+      
+      // Fallback to empty array to prevent complete crash
+      setCampaigns([]);
     } finally {
       setLoading(false);
     }
