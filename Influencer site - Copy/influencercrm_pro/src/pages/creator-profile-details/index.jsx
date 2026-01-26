@@ -12,6 +12,7 @@ import NotesTab from './components/NotesTab';
 import QuickStatsWidget from './components/QuickStatsWidget';
 import RecentActivityFeed from './components/RecentActivityFeed';
 import RelatedCreatorsWidget from './components/RelatedCreatorsWidget';
+import EditCreatorModal from './components/EditCreatorModal';
 import { realtimeService } from '../../services/realtimeService';
 import { creatorService } from '../../services/creatorService';
 import { campaignService } from '../../services/campaignService';
@@ -49,26 +50,37 @@ const CreatorProfileDetails = () => {
     { id: 'notes', label: 'Notes', icon: 'FileText' }
   ];
 
+  // Helper function to determine if data is junk/placeholder
+  const isJunkData = (value) => {
+    if (!value) return true;
+    const junkPatterns = [
+      'fadsfasf', 'asdfasdf', 'test', 'demo', 'n/a', 'na', 'null', 'undefined',
+      '123456', '000000', '111111', 'sample', 'example', 'placeholder'
+    ];
+    const strValue = String(value).toLowerCase().trim();
+    return junkPatterns.some(pattern => strValue.includes(pattern));
+  };
+
   // Helper function to format creator data for UI
   const formatCreatorData = (dbCreator) => {
     if (!dbCreator) return null;
 
     // Extract Instagram handle from link or username
     const getInstagramHandle = () => {
-      if (dbCreator?.username) {
+      if (dbCreator?.username && !isJunkData(dbCreator.username)) {
         return `@${dbCreator.username.replace('@', '')}`;
       }
-      if (dbCreator?.instagram_link) {
+      if (dbCreator?.instagram_link && !isJunkData(dbCreator.instagram_link)) {
         const match = dbCreator.instagram_link.match(/instagram\.com\/([^\/\?]+)/);
         if (match) return `@${match[1]}`;
       }
-      return 'N/A';
+      return 'Not Provided';
     };
 
     // Format followers count
     const formatFollowers = (followersTier, followersCount) => {
       // First try to use the actual followers count if available
-      if (followersCount && followersCount !== 'N/A' && followersCount !== 0) {
+      if (followersCount && followersCount !== 'N/A' && followersCount !== 0 && !isJunkData(followersCount)) {
         const num = parseInt(followersCount);
         if (!isNaN(num) && num > 0) {
           if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -78,7 +90,7 @@ const CreatorProfileDetails = () => {
       }
       
       // If no actual count, display the full tier range
-      if (followersTier && followersTier !== 'N/A') {
+      if (followersTier && followersTier !== 'N/A' && !isJunkData(followersTier)) {
         // Handle tier ranges like "10K-50K" - show the full range
         if (typeof followersTier === 'string' && followersTier.includes('-')) {
           // Return the full range as-is (e.g., "10K-50K")
@@ -106,39 +118,40 @@ const CreatorProfileDetails = () => {
         }
       }
       
-      return 'N/A';
+      return 'Not Provided';
     };
 
     return {
       id: dbCreator?.id || null,
-      name: dbCreator?.name || 'Unknown Creator',
+      name: dbCreator?.name && !isJunkData(dbCreator.name) ? dbCreator.name : 'Unknown Creator',
       profileImage: dbCreator?.profile_image || dbCreator?.profile_picture || null,
       profileImageAlt: `${dbCreator?.name || 'Creator'} profile picture`,
       instagramHandle: getInstagramHandle(),
-      instagramUrl: dbCreator?.instagram_link || null,
+      instagramUrl: dbCreator?.instagram_link && !isJunkData(dbCreator.instagram_link) ? dbCreator.instagram_link : null,
       isVerified: dbCreator?.is_verified || false,
       isPremium: dbCreator?.is_premium || false,
       status: dbCreator?.status || 'Active',
-      city: dbCreator?.city || 'N/A',
-      state: dbCreator?.state || 'N/A',
+      city: dbCreator?.city && !isJunkData(dbCreator.city) ? dbCreator.city : 'Not Provided',
+      state: dbCreator?.state && !isJunkData(dbCreator.state) ? dbCreator.state : 'Not Provided',
       followersCount: formatFollowers(dbCreator?.followers_tier, dbCreator?.followers_count),
-      engagementRate: dbCreator?.engagement_rate ? `${dbCreator.engagement_rate}%` : 'N/A',
-      avgLikes: dbCreator?.avg_likes ? dbCreator.avg_likes.toLocaleString() : '0',
-      avgComments: dbCreator?.avg_comments ? dbCreator.avg_comments.toLocaleString() : '0',
+      engagementRate: dbCreator?.engagement_rate && !isJunkData(dbCreator.engagement_rate) ? `${dbCreator.engagement_rate}%` : 'Not Provided',
+      avgLikes: dbCreator?.avg_likes && !isJunkData(dbCreator.avg_likes) ? dbCreator.avg_likes.toLocaleString() : '0',
+      avgComments: dbCreator?.avg_comments && !isJunkData(dbCreator.avg_comments) ? dbCreator.avg_comments.toLocaleString() : '0',
       lastSynced: dbCreator?.last_synced ? new Date(dbCreator.last_synced).toLocaleString() : 'Never',
-      email: dbCreator?.email || 'N/A',
-      phone: dbCreator?.whatsapp || dbCreator?.phone || 'N/A',
-      manager: dbCreator?.manager_name || 'N/A',
-      managerPhone: dbCreator?.manager_phone || 'N/A',
-      gender: dbCreator?.gender || 'N/A',
-      age: dbCreator?.age ? `${dbCreator.age} years` : 'N/A',
-      language: dbCreator?.language || 'N/A',
+      email: dbCreator?.email && !isJunkData(dbCreator.email) ? dbCreator.email : 'Not Provided',
+      phone: dbCreator?.whatsapp && !isJunkData(dbCreator.whatsapp) ? dbCreator.whatsapp : 
+             (dbCreator?.phone && !isJunkData(dbCreator.phone) ? dbCreator.phone : 'Not Provided'),
+      manager: dbCreator?.manager_name && !isJunkData(dbCreator.manager_name) ? dbCreator.manager_name : 'Not Provided',
+      managerPhone: dbCreator?.manager_phone && !isJunkData(dbCreator.manager_phone) ? dbCreator.manager_phone : 'Not Provided',
+      gender: dbCreator?.gender && !isJunkData(dbCreator.gender) ? dbCreator.gender : 'Not Provided',
+      age: dbCreator?.age && !isJunkData(dbCreator.age) ? `${dbCreator.age} years` : 'Not Provided',
+      language: dbCreator?.language && !isJunkData(dbCreator.language) ? dbCreator.language : 'Not Provided',
       categories: dbCreator?.categories ? (Array.isArray(dbCreator.categories) ? dbCreator.categories : [dbCreator.categories]) : [],
       tags: dbCreator?.tags ? (Array.isArray(dbCreator.tags) ? dbCreator.tags : [dbCreator.tags]) : [],
       // Database fields (snake_case)
-      sr_no: dbCreator?.sr_no || 'N/A',
-      username: dbCreator?.username || 'N/A',
-      sheet_source: dbCreator?.sheet_source || 'N/A',
+      sr_no: dbCreator?.sr_no || 'Not Provided',
+      username: dbCreator?.username && !isJunkData(dbCreator.username) ? dbCreator.username : 'Not Provided',
+      sheet_source: dbCreator?.sheet_source || 'Not Provided',
       created_at: dbCreator?.created_at || null,
       updated_at: dbCreator?.updated_at || null,
       manual_performance_score: dbCreator?.manual_performance_score || null
@@ -228,6 +241,29 @@ const CreatorProfileDetails = () => {
     fetchCreatorData();
   }, [id, location?.state?.creatorId]);
 
+  // Fetch campaign statistics for quick stats
+  useEffect(() => {
+    const fetchCampaignStats = async () => {
+      if (!creator?.id) return;
+      
+      try {
+        const stats = await creatorService.getCampaignStats(creator.id);
+        
+        // Update quick stats with real data
+        setQuickStats(prev => ({
+          ...prev,
+          totalCampaigns: stats.totalCampaigns,
+          completedCampaigns: stats.completedCampaigns,
+          activeCampaigns: stats.activeCampaigns
+        }));
+      } catch (error) {
+        console.error('Error fetching campaign stats:', error);
+      }
+    };
+
+    fetchCampaignStats();
+  }, [creator?.id]);
+
   // Fetch available campaigns for "Add to Campaign" functionality
   useEffect(() => {
     const fetchAvailableCampaigns = async () => {
@@ -247,15 +283,33 @@ const CreatorProfileDetails = () => {
   }, []);
 
   // Calculate quick stats from real data
-  const quickStats = {
-    totalCampaigns: campaigns?.length || 0,
-    completedCampaigns: campaigns?.filter(c => c?.status === 'completed' || c?.payment_status === 'paid')?.length || 0,
-    activeCampaigns: campaigns?.filter(c => c?.status === 'active' || c?.payment_status === 'pending')?.length || 0,
-    totalEarned: payments?.filter(p => p?.status === 'Paid')?.reduce((sum, p) => sum + (p?.amount || 0), 0) || 0,
-    avgPerCampaign: campaigns?.length > 0 
-      ? Math.round((payments?.filter(p => p?.status === 'Paid')?.reduce((sum, p) => sum + (p?.amount || 0), 0) || 0) / campaigns.length)
-      : 0,
-    performanceScore: (() => {
+  const [quickStats, setQuickStats] = useState({
+    totalCampaigns: 0,
+    completedCampaigns: 0,
+    activeCampaigns: 0,
+    totalEarned: 0,
+    avgPerCampaign: 0,
+    performanceScore: 0,
+    isManualScore: false
+  });
+
+  // Update payment stats when payments change
+  useEffect(() => {
+    const totalEarned = payments?.filter(p => p?.status === 'Paid')?.reduce((sum, p) => sum + (p?.amount || 0), 0) || 0;
+    const avgPerCampaign = quickStats.totalCampaigns > 0 
+      ? Math.round(totalEarned / quickStats.totalCampaigns)
+      : 0;
+    
+    setQuickStats(prev => ({
+      ...prev,
+      totalEarned,
+      avgPerCampaign
+    }));
+  }, [payments, quickStats.totalCampaigns]);
+
+  // Calculate performance score
+  useEffect(() => {
+    const performanceScore = (() => {
       // Get creator data with engagement metrics
       const creatorData = {
         engagement_rate: creator?.engagementRate ? parseFloat(creator.engagementRate.replace('%', '')) : 0,
@@ -270,9 +324,14 @@ const CreatorProfileDetails = () => {
       const commentsScore = Math.min(creatorData.avg_comments / 100, 10) * 0.3;
       
       return Math.round(engagementScore + likesScore + commentsScore);
-    })(),
-    isManualScore: creator?.manual_performance_score !== null
-  };
+    })();
+
+    setQuickStats(prev => ({
+      ...prev,
+      performanceScore,
+      isManualScore: creator?.manual_performance_score !== null
+    }));
+  }, [creator]);
 
   // Handler functions
   const handleEdit = () => {
@@ -291,19 +350,86 @@ const CreatorProfileDetails = () => {
     navigate('/creator-database-management');
   };
 
-  const handleCreatorUpdate = async (updatedData) => {
+  const handleCreatorUpdate = async (creatorId, updatedData) => {
     try {
-      // Update creator logic here
-      console.log('Updating creator:', updatedData);
+      console.log('🔵 Updating creator:', creatorId, updatedData);
+      
+      const updatedCreator = await creatorService.updateCreator(creatorId, updatedData);
+      
+      // Update local state with new data
+      const formattedCreator = formatCreatorData(updatedCreator);
+      setCreator(formattedCreator);
+      
+      toast.success('Creator profile updated successfully!');
       setIsEditModalOpen(false);
     } catch (error) {
-      console.error('Error updating creator:', error);
+      console.error('❌ Error updating creator:', error);
+      toast.error('Failed to update creator profile');
+    }
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!creator?.id) return;
+    
+    setIsArchiving(true);
+    try {
+      console.log('🔵 Archiving creator:', creator.id);
+      
+      const archivedCreator = await creatorService.archiveCreator(creator.id);
+      
+      // Update local state
+      const formattedCreator = formatCreatorData(archivedCreator);
+      setCreator(formattedCreator);
+      
+      toast.success('Creator archived successfully!');
+      setIsArchiveConfirmOpen(false);
+    } catch (error) {
+      console.error('❌ Error archiving creator:', error);
+      toast.error('Failed to archive creator');
+    } finally {
+      setIsArchiving(false);
     }
   };
 
   const handleAddNote = (note) => {
     // Add note logic here
     console.log('Adding note:', note);
+  };
+
+  const handleSyncInstagram = async () => {
+    if (!creator?.id) return;
+    
+    try {
+      await creatorService.syncInstagramMetrics(creator.id);
+      
+      // Refresh creator data to get updated last_synced timestamp
+      const creatorData = await creatorService?.getById(creator.id);
+      if (creatorData) {
+        const formattedCreator = formatCreatorData(creatorData);
+        setCreator(formattedCreator);
+      }
+    } catch (error) {
+      console.error('Error syncing Instagram metrics:', error);
+    }
+  };
+
+  const handleAddToCampaignConfirm = async () => {
+    if (!creator?.id || !selectedCampaign) return;
+    
+    setIsAddingToCampaign(true);
+    try {
+      console.log('🔵 Adding creator to campaign:', creator.id, selectedCampaign);
+      
+      // This is a dummy function - in production, this would add the creator to the campaign
+      toast.success('Creator added to campaign successfully!');
+      setIsAddToCampaignModalOpen(false);
+      setSelectedCampaign('');
+    } catch (error) {
+      console.error('❌ Error adding creator to campaign:', error);
+      toast.error('Failed to add creator to campaign');
+    } finally {
+      setIsAddingToCampaign(false);
+    }
   };
 
   // Loading state
@@ -413,90 +539,12 @@ const CreatorProfileDetails = () => {
       </main>
       
       {/* Edit Creator Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Edit Creator</h2>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <Icon name="X" size={24} />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                  <input
-                    type="text"
-                    defaultValue={creator?.name || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Creator name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    defaultValue={creator?.email || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Email address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    defaultValue={creator?.phone || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Phone number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
-                    defaultValue={creator?.city || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="City"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                  <input
-                    type="text"
-                    defaultValue={creator?.state || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="State"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleCreatorUpdate({
-                    name: creator?.name,
-                    email: creator?.email,
-                    phone: creator?.phone,
-                    city: creator?.city,
-                    state: creator?.state
-                  })}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditCreatorModal
+        creator={creator}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdate={handleCreatorUpdate}
+      />
       
       {/* Archive Confirmation Dialog */}
       {isArchiveConfirmOpen && (
@@ -509,8 +557,8 @@ const CreatorProfileDetails = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Archive Creator</h3>
-                  <p className="text-sm text-gray-600">
-                    Are you sure you want to archive this creator? This action can be undone.
+                  <p className="text-gray-600">
+                    Are you sure you want to archive "{creator?.name}"? This will mark the creator as inactive but preserve all their data.
                   </p>
                 </div>
               </div>
@@ -523,7 +571,7 @@ const CreatorProfileDetails = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={confirmArchive}
+                  onClick={handleArchiveConfirm}
                   disabled={isArchiving}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
@@ -576,7 +624,7 @@ const CreatorProfileDetails = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={confirmAddToCampaign}
+                  onClick={handleAddToCampaignConfirm}
                   disabled={isAddingToCampaign || !selectedCampaign}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >

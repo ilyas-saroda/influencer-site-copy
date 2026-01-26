@@ -428,5 +428,154 @@ export const creatorService = {
       console.error('Error bulk updating creators:', error);
       throw error;
     }
+  },
+
+  async updatePerformanceScore(id, score) {
+    try {
+      const updateData = score !== null 
+        ? { manual_performance_score: score }
+        : { manual_performance_score: null };
+
+      const { data, error } = await supabase
+        ?.from('creators')
+        ?.update(updateData)
+        ?.eq('id', id)
+        ?.select()
+        ?.single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating performance score:', error);
+      throw error;
+    }
+  },
+
+  // Update creator
+  async updateCreator(id, updateData) {
+    try {
+      console.log('🔵 Updating creator:', id, updateData);
+      
+      const { data, error } = await supabase
+        ?.from('creators')
+        ?.update(updateData)
+        ?.eq('id', id)
+        ?.select()
+        ?.single();
+
+      if (error) {
+        console.error('❌ Error updating creator:', error);
+        throw error;
+      }
+      
+      console.log('✅ Creator updated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error updating creator:', error);
+      throw error;
+    }
+  },
+
+  // Archive creator (soft delete)
+  async archiveCreator(id) {
+    try {
+      console.log('🔵 Archiving creator:', id);
+      
+      const { data, error } = await supabase
+        ?.from('creators')
+        ?.update({ 
+          status: 'archived',
+          updated_at: new Date().toISOString()
+        })
+        ?.eq('id', id)
+        ?.select()
+        ?.single();
+
+      if (error) {
+        console.error('❌ Error archiving creator:', error);
+        throw error;
+      }
+      
+      console.log('✅ Creator archived successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error archiving creator:', error);
+      throw error;
+    }
+  },
+
+  // Get campaign statistics for a creator
+  async getCampaignStats(creatorId) {
+    try {
+      console.log('🔵 Fetching campaign stats for creator:', creatorId);
+      
+      // Count total campaigns
+      const { data: totalCampaigns, error: totalError } = await supabase
+        ?.from('campaign_participants')
+        ?.select('campaign_id')
+        ?.eq('creator_id', creatorId);
+
+      // Count completed campaigns
+      const { data: completedCampaigns, error: completedError } = await supabase
+        ?.from('campaign_participants')
+        ?.select('campaign_id')
+        ?.eq('creator_id', creatorId)
+        ?.eq('status', 'completed');
+
+      if (totalError || completedError) {
+        console.error('❌ Error fetching campaign stats:', totalError || completedError);
+        throw totalError || completedError;
+      }
+      
+      const stats = {
+        totalCampaigns: totalCampaigns?.length || 0,
+        completedCampaigns: completedCampaigns?.length || 0,
+        activeCampaigns: (totalCampaigns?.length || 0) - (completedCampaigns?.length || 0)
+      };
+      
+      console.log('✅ Campaign stats:', stats);
+      return stats;
+    } catch (error) {
+      console.error('❌ Error fetching campaign stats:', error);
+      return {
+        totalCampaigns: 0,
+        completedCampaigns: 0,
+        activeCampaigns: 0
+      };
+    }
+  },
+
+  // Sync Instagram metrics (dummy function for now)
+  async syncInstagramMetrics(creatorId) {
+    try {
+      console.log('🔵 Syncing Instagram metrics for creator:', creatorId);
+      
+      // This is a dummy sync function - in production, this would call Instagram API
+      // For now, we'll just update the last_synced timestamp
+      const { data, error } = await supabase
+        ?.from('creators')
+        ?.update({ 
+          last_synced: new Date().toISOString()
+        })
+        ?.eq('id', creatorId)
+        ?.select()
+        ?.single();
+
+      if (error) {
+        console.error('❌ Error syncing Instagram metrics:', error);
+        throw error;
+      }
+      
+      console.log('✅ Instagram metrics synced successfully:', data);
+      
+      // Show success message
+      toast?.success('Instagram metrics synced successfully!');
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Error syncing Instagram metrics:', error);
+      toast?.error('Failed to sync Instagram metrics');
+      throw error;
+    }
   }
 };

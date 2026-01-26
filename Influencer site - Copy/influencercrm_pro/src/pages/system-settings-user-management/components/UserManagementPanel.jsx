@@ -42,8 +42,8 @@ const UserManagementPanel = () => {
         toast?.error('Failed to load users: ' + (usersResult.error?.message || 'Unknown error'));
         if (usersResult.error?.message?.includes('network') || usersResult.error?.message?.includes('connection')) {
           setUsers([
-            { id: '1', fullName: 'John Admin', email: 'admin@example.com', isActive: true, userRoles: { roleName: 'super_admin', displayName: 'Super Admin' }, createdAt: new Date().toISOString() },
-            { id: '2', fullName: 'Jane Manager', email: 'manager@example.com', isActive: true, userRoles: { roleName: 'manager', displayName: 'Manager' }, createdAt: new Date().toISOString() }
+            { id: '1', full_name: 'John Admin', email: 'admin@example.com', is_active: true, userRoles: { roleName: 'super_admin', displayName: 'Super Admin' }, created_at: new Date().toISOString() },
+            { id: '2', full_name: 'Jane Manager', email: 'manager@example.com', is_active: true, userRoles: { roleName: 'manager', displayName: 'Manager' }, created_at: new Date().toISOString() }
           ]);
         } else {
           setUsers([]);
@@ -78,7 +78,7 @@ const UserManagementPanel = () => {
       if (error?.message?.includes('network') || error?.message?.includes('connection')) {
         toast?.error('Using sample data due to connection issues');
         setUsers([
-          { id: '1', fullName: 'John Admin', email: 'admin@example.com', isActive: true, userRoles: { roleName: 'super_admin', displayName: 'Super Admin' }, createdAt: new Date().toISOString() }
+          { id: '1', full_name: 'John Admin', email: 'admin@example.com', is_active: true, userRoles: { roleName: 'super_admin', displayName: 'Super Admin' }, created_at: new Date().toISOString() }
         ]);
         setRoles([
           { id: '1', roleName: 'super_admin', displayName: 'Super Admin' }
@@ -97,7 +97,7 @@ const UserManagementPanel = () => {
       const { data, error } = await toggleUserStatus(userId, !currentStatus);
       if (error) throw error;
 
-      setUsers(prev => prev?.map(u => u?.id === userId ? { ...u, isActive: !currentStatus } : u));
+      setUsers(prev => prev?.map(u => u?.id === userId ? { ...u, is_active: !currentStatus } : u));
       toast?.success(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
       console.error('Error toggling user status:', error);
@@ -133,7 +133,7 @@ const UserManagementPanel = () => {
   };
 
   const filteredUsers = users?.filter(user => {
-    const matchesSearch = user?.fullName?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+    const matchesSearch = user?.full_name?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
                          user?.email?.toLowerCase()?.includes(searchTerm?.toLowerCase());
     const matchesRole = selectedRole === 'all' || user?.userRoles?.roleName === selectedRole;
     return matchesSearch && matchesRole;
@@ -291,11 +291,11 @@ const UserManagementPanel = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-purple-600 font-semibold">
-                          {user?.fullName?.charAt(0) || 'U'}
+                          {user?.full_name?.charAt(0) || 'U'}
                         </span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-gray-900 truncate">{user?.fullName}</div>
+                        <div className="font-medium text-gray-900 truncate">{user?.full_name}</div>
                         <div className="text-sm text-gray-500 truncate">{user?.email}</div>
                       </div>
                     </div>
@@ -307,13 +307,13 @@ const UserManagementPanel = () => {
                   </td>
                   <td className="px-6 py-4">
                     <button
-                      onClick={() => handleToggleStatus(user?.id, user?.isActive)}
+                      onClick={() => handleToggleStatus(user?.id, user?.is_active)}
                       className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                        user?.isActive
+                        user?.is_active
                           ? 'bg-green-100 text-green-700 hover:bg-green-200' :'bg-red-100 text-red-700 hover:bg-red-200'
                       }`}
                     >
-                      {user?.isActive ? (
+                      {user?.is_active ? (
                         <>
                           <CheckCircle className="w-3 h-3" />
                           Active
